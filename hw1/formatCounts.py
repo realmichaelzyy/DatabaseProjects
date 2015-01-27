@@ -25,7 +25,7 @@ with open('temp_token_count.csv', 'r') as inputFile, open('token_counts.csv', 'w
     sortedNameCount = sorted(nameList, key=nameList.__getitem__)
     for item in reversed(sortedNameCount):
         count_write = nameList[item]
-        name_write = item.capitalize()
+        name_write = item  #.capitalize()
         if (count_write != 0):
             nameWriter.writerow([name_write, count_write])
         
