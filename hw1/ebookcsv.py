@@ -15,7 +15,7 @@ def extract_filename ():
 
 fileName = extract_filename()
 
-with open('test.csv', 'w') as outputFile and open(fileName, 'r') as inputFile:
+with open('test.csv', 'w') as outputFile, open(fileName, 'r') as inputFile:
     csvWriter = csv.writer(outputFile)
     csvWriter.writerow(['title','author','release_date','ebook_id','language', 'body'])
     
@@ -41,8 +41,8 @@ with open('test.csv', 'w') as outputFile and open(fileName, 'r') as inputFile:
                 index2 = line.find('[')
                 index3 = line.find('#')
                 index4 = line.find(']')
-                release_date = line[index+1, index2].strip()
-                ebook_id = line[lindex3+1: index4].strip()
+                release_date = line[index+1: index2].strip()
+                ebook_id = line[index3+1: index4].strip()
         elif 'language:' in line.lower():
             index = line.find(':')
             content = line[index+1:].strip()
