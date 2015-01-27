@@ -1,1 +1,18 @@
 sed '1d' tokens.csv | sort -t',' -k2,2 | cut -d ',' -f 2 | uniq -c
+
+>>> nameList = dict()
+>>> nameList['daxi'] = 0
+>>> nameList['jessica'] = 10
+>>> nameList['sts'] = 11
+>>> nameList['hello'] = 5 
+>>> nameList
+{'daxi': 0, 'hello': 5, 'jessica': 10, 'sts': 11}
+>>> nameList['daxi'] = 5
+>>> nameList
+{'daxi': 5, 'hello': 5, 'jessica': 10, 'sts': 11}
+>>> nameList['one'] = 1
+>>> nameList
+{'daxi': 5, 'hello': 5, 'one': 1, 'jessica': 10, 'sts': 11}
+>>> sorted(nameList, key=nameList.__getitem__)
+['one', 'daxi', 'hello', 'jessica', 'sts']
+>>> 
