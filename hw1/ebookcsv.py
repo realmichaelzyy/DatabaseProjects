@@ -7,6 +7,7 @@ for line in fileinput.input()
 """
 import sys
 import csv
+import re
 
 #will add parameter checking when have time
 def extract_filename ():
@@ -15,10 +16,12 @@ def extract_filename ():
 
 fileName = extract_filename()
 
-with open('test.csv', 'w') as outputFile, open(fileName, 'r') as inputFile:
+with open('test.csv', 'w') as outputFile, open('tokens_test.csv', 'w') as tokenFile, open(fileName, 'r') as inputFile:
     csvWriter = csv.writer(outputFile)
     csvWriter.writerow(['title','author','release_date','ebook_id','language', 'body'])
-    
+    tokenWriter = csv.writer(tokenFile)
+    tokenWriter.writerow(['ebook_id', 'token'])
+
     title = author = release_date = ebook_id = language = "null"
     body = "There must be a body field! What happen?"
     
@@ -59,6 +62,11 @@ with open('test.csv', 'w') as outputFile, open(fileName, 'r') as inputFile:
                     body += line
                 line = inputFile.readline()
             csvWriter.writerow([title, author, release_date, ebook_id, language, body])
+            if (firstTime == False):
+                tokens = re.sub('[^a-zA-Z]', ' ', body).strip().split()
+                for token in tokens:
+                    tokenWriter.writerow([ebook_id, token.lower()])
+
             title = author = release_date = ebook_id = language = "null"
             body = "There must be a body field! What happen?"
 
