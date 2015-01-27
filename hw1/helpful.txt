@@ -1,0 +1,1 @@
+sed '1d' tokens.csv | sort -t',' -k2,2 | cut -d ',' -f 2 | uniq -c
