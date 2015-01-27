@@ -1,5 +1,4 @@
 #this is a helper python file created by Daxi Li
-
 """
 import fileinput
 
@@ -16,7 +15,7 @@ def extract_filename ():
 
 fileName = extract_filename()
 
-with open('test.csv', 'w') as outputFile, open('tokens_test.csv', 'w') as tokenFile, open(fileName, 'r') as inputFile:
+with open('ebook.csv', 'w') as outputFile, open('tokens.csv', 'w') as tokenFile, open(fileName, 'r') as inputFile:
     csvWriter = csv.writer(outputFile)
     csvWriter.writerow(['title','author','release_date','ebook_id','language', 'body'])
     tokenWriter = csv.writer(tokenFile)
@@ -71,5 +70,4 @@ with open('test.csv', 'w') as outputFile, open('tokens_test.csv', 'w') as tokenF
             body = "There must be a body field! What happen?"
 
         line = inputFile.readline()
-
 
