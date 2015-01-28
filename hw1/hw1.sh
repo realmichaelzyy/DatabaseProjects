@@ -8,5 +8,5 @@ sed '1d' tokens.csv | sort -t',' -k2,2 | cut -d ',' -f 2 | uniq -c > temp_token_
 #echo "Reformatting the count and name_counts.csv"
 python formatCounts.py
 #echo "Deleting temp file"
-#rm -f temp_token_count.csv
+rm -f temp_token_count.csv
 exit 0
