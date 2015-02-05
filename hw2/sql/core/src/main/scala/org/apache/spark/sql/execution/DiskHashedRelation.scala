@@ -103,7 +103,7 @@ private[sql] class DiskPartition (
    * If this partition has been closed, this method returns an Iterator of all the
    * data that was written to disk by this partition.
    *
-   * @return the [[Iterator]] of the data
+   * @return the [[JavaArrayList]] of the data
    */
   def getData(): Iterator[Row] = {
     if (!inputClosed) {
@@ -142,7 +142,7 @@ private[sql] class DiskPartition (
         // IMPLEMENT ME
         val canFetch = chunkSizeIterator.hasNext
         if (canFetch){
-          byteArray = getNextChunkBytes(inStream, chunkSizeIterator.next(), byteArray)
+          byteArray = getNextChunkBytes(inStream, chunkSizeIterator.next(),byteArray)
           currentIterator = getListFromBytes(byteArray).iterator.asScala
         }
         canFetch
