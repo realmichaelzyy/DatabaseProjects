@@ -33,4 +33,23 @@ class DiskPartitionSuite extends FunSuite {
       partition.insert(Row(1))
     }
   }
+
+  //The following tests are added by Daxi Li
+  //test the behaviour of the interator returned when there is no input
+  test ("no input") {
+    val partition: DiskPartition = new DiskPartition("disk partition test", 2000)
+    partition.closeInput()
+    assert(partition.getData().hasNext == false)
+  }
+
+  //the only one write to disk is when closeInput() gets called
+  test ("only one write to disk"){
+    val partition: DiskPartition = new DiskPartition("disk partition test", 2000)
+    partition.insert(Row(1))
+    partition.closeInput()
+    val data: Iterator[Row] = partition.getData()
+    assert(data.hasNext == true)
+    assert(data.next().equals(Row(1)))
+  }
+
 }

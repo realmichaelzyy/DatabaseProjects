@@ -64,6 +64,16 @@ private[sql] class DiskPartition (
    */
   def insert(row: Row) = {
     // IMPLEMENT ME
+    if (inputClosed) {
+      throw new SparkException("Input closed. No more insert.")
+    }
+    data.add(row)
+    //println(row+" Now Size is "+measurePartitionSize())
+    //*** need to check piazza update. posted a question here for this part:https://piazza.com/class/i3dtazoixk45lk
+    if (measurePartitionSize() > blockSize){
+      spillPartitionToDisk()
+      data.clear()
+    }
   }
 
   /**
@@ -107,12 +117,19 @@ private[sql] class DiskPartition (
 
       override def next() = {
         // IMPLEMENT ME
-        null
+        var result: Row = null
+        if (currentIterator.hasNext){
+          result = currentIterator.next()
+        }else if (fetchNextChunk()&&currentIterator.hasNext){
+          result = currentIterator.next()
+        }
+
+        result
       }
 
       override def hasNext() = {
         // IMPLEMENT ME
-        false
+        currentIterator.hasNext || chunkSizeIterator.hasNext
       }
 
       /**
@@ -123,7 +140,12 @@ private[sql] class DiskPartition (
        */
       private[this] def fetchNextChunk(): Boolean = {
         // IMPLEMENT ME
-        false
+        val canFetch = chunkSizeIterator.hasNext
+        if (canFetch){
+          byteArray = getNextChunkBytes(inStream, chunkSizeIterator.next(), byteArray)
+          currentIterator = getListFromBytes(byteArray).iterator.asScala
+        }
+        canFetch
       }
     }
   }
@@ -136,8 +158,13 @@ private[sql] class DiskPartition (
    * also be closed.
    */
   def closeInput() = {
-    // IMPLEMENT ME
+    // IMPLEMENT ME  Other piazza I asked for this problem:https://piazza.com/class/i3dtazoixk45lk?cid=525
     inputClosed = true
+    if (data.size() != 0) {
+      spillPartitionToDisk()
+      data.clear()
+    }
+    outStream.close()
   }
 
 
