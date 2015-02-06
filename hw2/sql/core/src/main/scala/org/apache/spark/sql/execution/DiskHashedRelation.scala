@@ -35,13 +35,17 @@ private[sql] sealed trait DiskHashedRelation {
 protected [sql] final class GeneralDiskHashedRelation(partitions: Array[DiskPartition])
     extends DiskHashedRelation with Serializable {
 
+
   override def getIterator() = {
     // IMPLEMENT ME
-    null
+    partitions.iterator
   }
 
   override def closeAllPartitions() = {
     // IMPLEMENT ME
+    for (partition <- partitions){
+      partition.closePartition()
+    }
   }
 }
 
@@ -201,6 +205,23 @@ private[sql] object DiskHashedRelation {
                 size: Int = 64,
                 blockSize: Int = 64000) = {
     // IMPLEMENT ME
-    null
+    // The way to get hashcode needs to be double check, also the filename for partition,should i name it like below? (may have conflict. leave it as what it is from now)
+    var result: GeneralDiskHashedRelation = null
+
+    if (size > 0 && blockSize > 0 && input != null) {
+      val partitions: Array[DiskPartition] = (0 to (size - 1)).map(i => (new DiskPartition("disk_partition_" + i, blockSize))).toArray
+      var index: Int = 0
+
+      for (temp_row <- input) {
+        index = keyGenerator(temp_row).hashCode() % size
+        partitions(index).insert(temp_row)
+      }
+      for (i <- 0 to (size - 1)) {
+        partitions(i).closeInput()
+      }
+
+      result = new GeneralDiskHashedRelation(partitions)
+    }
+    result
   }
 }
