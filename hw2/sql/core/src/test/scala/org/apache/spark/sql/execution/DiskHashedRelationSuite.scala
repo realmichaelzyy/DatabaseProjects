@@ -96,7 +96,7 @@ class DiskHashedRelationSuite extends FunSuite {
     var total: Int = 0
     var partitionNum:Int = 0
     val temp_list: JavaArrayList[Row] = new JavaArrayList[Row]
-    val verification: Iterator[Row] = (0 to 10000).map(i => Row(i)).toArray.iterator
+
 
     for (partition <- hashedRelation.getIterator()) {
       for (row <- partition.getData()) {
