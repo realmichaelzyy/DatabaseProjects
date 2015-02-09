@@ -124,8 +124,6 @@ private[sql] class DiskPartition (
         var result: Row = null
         if (currentIterator.hasNext){
           result = currentIterator.next()
-        }else if (fetchNextChunk()&&currentIterator.hasNext){
-          result = currentIterator.next()
         }
 
         result
@@ -133,7 +131,7 @@ private[sql] class DiskPartition (
 
       override def hasNext() = {
         // IMPLEMENT ME
-        currentIterator.hasNext || chunkSizeIterator.hasNext
+        currentIterator.hasNext || (fetchNextChunk()&&currentIterator.hasNext)
       }
 
       /**
