@@ -74,7 +74,7 @@ private[sql] class DiskPartition (
     data.add(row)
     //println(row+" Now Size is "+measurePartitionSize())
     //*** need to check piazza update. posted a question here for this part:https://piazza.com/class/i3dtazoixk45lk
-    if (measurePartitionSize() >= blockSize){
+    if (measurePartitionSize() > blockSize){
       if (data.size() > 1) {
         data.remove(data.size() - 1)
         spillPartitionToDisk()
