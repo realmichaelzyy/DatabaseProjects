@@ -104,6 +104,14 @@ class CS186UtilsSuite extends FunSuite {
     assert(total1==1000)
   }
 
+  test("empty set") {
+    val list: ArraySeq[Row] = new ArraySeq[Row](0)
+
+    val udf: ScalaUdf = new ScalaUdf((num1: Int, num2: Int, num3:Int) => num1+num2+num3+1, IntegerType, Seq(testObjAttributes(0), testObjAttributes(1), testObjAttributes(2)))
+    val result: Iterator[Row] = CachingIteratorGenerator(testObjAttributes, udf, Seq(), Seq(), testObjAttributes)(list.iterator)
+    assert(result.hasNext==false)
+  }
+
 /* this test is commented out because it needs to be eye ball by putting two println in cache.Contains and not contains
   test("caching behaviour"){
     val list: ArraySeq[Row] = new ArraySeq[Row](1000)

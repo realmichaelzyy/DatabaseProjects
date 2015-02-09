@@ -97,18 +97,25 @@ case class PartitionProject(projectList: Seq[Expression], child: SparkPlan) exte
   def generateIterator(input: Iterator[Row]): Iterator[Row] = {
     // This is the key generator for the course-grained external hashing.
     val keyGenerator = CS186Utils.getNewProjection(projectList, child.output)
-
+    val udfHelper: (Iterator[Row] => Iterator[Row]) = CS186Utils.generateCachingIterator(projectList, child.output)
     // IMPLEMENT ME
+    val hashPartition:DiskHashedRelation = DiskHashedRelation(input, keyGenerator)
 
     new Iterator[Row] {
+      val partitions:Iterator[DiskPartition] = hashPartition.getIterator()
+      var currentIterator:Iterator[Row] = null
+
       def hasNext() = {
         // IMPLEMENT ME
-        false
+        (currentIterator!=null && currentIterator.hasNext) || (fetchNextPartition()&&currentIterator.hasNext)
       }
 
       def next() = {
-        // IMPLEMENT ME
-        null
+        var result:Row = null
+        if (this.hasNext()){
+          result = currentIterator.next()
+        }
+        result
       }
 
       /**
@@ -119,7 +126,13 @@ case class PartitionProject(projectList: Seq[Expression], child: SparkPlan) exte
        */
       private def fetchNextPartition(): Boolean  = {
         // IMPLEMENT ME
-        false
+        val canFetch = partitions.hasNext
+        var nextPartition:DiskPartition = null
+        if (canFetch){
+          nextPartition = partitions.next()
+          currentIterator = udfHelper(nextPartition.getData())
+        }
+        canFetch
       }
     }
   }
