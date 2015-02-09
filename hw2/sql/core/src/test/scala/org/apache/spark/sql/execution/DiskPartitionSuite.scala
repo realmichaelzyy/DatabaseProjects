@@ -67,7 +67,7 @@ class DiskPartitionSuite extends FunSuite {
   }
 
   test ("disk partition2, each row usually 275, set as 276") {
-    val partition: DiskPartition = new DiskPartition("disk partition test", 476)
+    val partition: DiskPartition = new DiskPartition("disk partition test", 276)
 
     for (i <- 1 to 1000) {
       partition.insert(Row(i))
