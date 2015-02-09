@@ -7,6 +7,7 @@ import org.scalatest.FunSuite
 class DiskPartitionSuite extends FunSuite {
 
   // TESTS FOR TASK #1
+
   test ("disk partition") {
     val partition: DiskPartition = new DiskPartition("disk partition test", 2000)
 
@@ -52,4 +53,29 @@ class DiskPartitionSuite extends FunSuite {
     assert(data.next().equals(Row(1)))
   }
 
+  test ("disk partition2, very small block size, basically one write for one row") {
+    val partition: DiskPartition = new DiskPartition("disk partition test", 2)
+
+    for (i <- 1 to 1000) {
+      partition.insert(Row(i))
+    }
+
+    partition.closeInput()
+
+    val data: Array[Row] = partition.getData.toArray
+    (1 to 1000).foreach((x: Int) => assert(data.contains(Row(x))))
+  }
+
+  test ("disk partition2, each row usually 275, set as 276") {
+    val partition: DiskPartition = new DiskPartition("disk partition test", 476)
+
+    for (i <- 1 to 1000) {
+      partition.insert(Row(i))
+    }
+
+    partition.closeInput()
+
+    val data: Array[Row] = partition.getData.toArray
+    (1 to 1000).foreach((x: Int) => assert(data.contains(Row(x))))
+  }
 }

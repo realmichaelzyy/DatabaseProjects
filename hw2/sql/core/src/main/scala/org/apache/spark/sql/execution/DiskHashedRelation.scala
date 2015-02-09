@@ -75,8 +75,15 @@ private[sql] class DiskPartition (
     //println(row+" Now Size is "+measurePartitionSize())
     //*** need to check piazza update. posted a question here for this part:https://piazza.com/class/i3dtazoixk45lk
     if (measurePartitionSize() > blockSize){
-      spillPartitionToDisk()
-      data.clear()
+      if (data.size() > 1) {
+        data.remove(data.size() - 1)
+        spillPartitionToDisk()
+        data.clear()
+        data.add(row)
+      }else{
+        spillPartitionToDisk()
+        data.clear()
+      }
     }
   }
 
@@ -167,6 +174,11 @@ private[sql] class DiskPartition (
       data.clear()
     }
     outStream.close()
+    println("Printing out chunk size: ")
+    val itt: Iterator[Int] = chunkSizes.iterator().asScala
+    while (itt.hasNext){
+      println(itt.next())
+    }
   }
 
 
