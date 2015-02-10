@@ -107,7 +107,11 @@ case class PartitionProject(projectList: Seq[Expression], child: SparkPlan) exte
 
       def hasNext() = {
         // IMPLEMENT ME
-        (currentIterator!=null && currentIterator.hasNext) || (fetchNextPartition()&&currentIterator.hasNext)
+        val result = (currentIterator!=null && currentIterator.hasNext) || (fetchNextPartition()&&currentIterator.hasNext)
+        if (!result){
+          hashPartition.closeAllPartitions()
+        }
+        result
       }
 
       def next() = {
@@ -115,6 +119,7 @@ case class PartitionProject(projectList: Seq[Expression], child: SparkPlan) exte
         if (this.hasNext()){
           result = currentIterator.next()
         }
+        this.hasNext() //if the current next is the last item, this will trigger closeAllPartitions
         result
       }
 
