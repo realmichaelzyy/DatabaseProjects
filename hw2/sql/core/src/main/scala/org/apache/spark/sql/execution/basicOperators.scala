@@ -97,9 +97,10 @@ case class PartitionProject(projectList: Seq[Expression], child: SparkPlan) exte
   def generateIterator(input: Iterator[Row]): Iterator[Row] = {
     // This is the key generator for the course-grained external hashing.
     val keyGenerator = CS186Utils.getNewProjection(projectList, child.output)
-    val udfHelper: (Iterator[Row] => Iterator[Row]) = CS186Utils.generateCachingIterator(projectList, child.output)
+
     // IMPLEMENT ME
     val hashPartition:DiskHashedRelation = DiskHashedRelation(input, keyGenerator)
+    val udfHelper: (Iterator[Row] => Iterator[Row]) = CS186Utils.generateCachingIterator(projectList, child.output)
 
     new Iterator[Row] {
       val partitions:Iterator[DiskPartition] = hashPartition.getIterator()

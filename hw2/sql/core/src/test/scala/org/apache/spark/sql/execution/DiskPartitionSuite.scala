@@ -51,6 +51,7 @@ class DiskPartitionSuite extends FunSuite {
     val data: Iterator[Row] = partition.getData()
     assert(data.hasNext == true)
     assert(data.next().equals(Row(1)))
+    assert(data.hasNext == false)
   }
 
   test ("disk partition2, very small block size, basically one write for one row") {
@@ -68,6 +69,19 @@ class DiskPartitionSuite extends FunSuite {
 
   test ("disk partition2, each row usually 275, set as 276") {
     val partition: DiskPartition = new DiskPartition("disk partition test", 276)
+
+    for (i <- 1 to 1000) {
+      partition.insert(Row(i))
+    }
+
+    partition.closeInput()
+
+    val data: Array[Row] = partition.getData.toArray
+    (1 to 1000).foreach((x: Int) => assert(data.contains(Row(x))))
+  }
+
+  test ("disk partition, with supper large block size") {
+    val partition: DiskPartition = new DiskPartition("disk partition test", 100000)
 
     for (i <- 1 to 1000) {
       partition.insert(Row(i))

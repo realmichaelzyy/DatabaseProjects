@@ -72,8 +72,6 @@ private[sql] class DiskPartition (
       throw new SparkException("Input closed. No more insert.")
     }
     data.add(row)
-    //println(row+" Now Size is "+measurePartitionSize())
-    //*** need to check piazza update. posted a question here for this part:https://piazza.com/class/i3dtazoixk45lk
     if (measurePartitionSize() > blockSize){
       if (data.size() > 1) {
         data.remove(data.size() - 1)
@@ -167,7 +165,7 @@ private[sql] class DiskPartition (
    * also be closed.
    */
   def closeInput() = {
-    // IMPLEMENT ME  Other piazza I asked for this problem:https://piazza.com/class/i3dtazoixk45lk?cid=525
+    // IMPLEMENT ME
     inputClosed = true
     if (data.size() != 0) {
       spillPartitionToDisk()
@@ -210,7 +208,6 @@ private[sql] object DiskHashedRelation {
                 size: Int = 64,
                 blockSize: Int = 64000) = {
     // IMPLEMENT ME
-    // The way to get hashcode needs to be double check, also the filename for partition,should i name it like below? (may have conflict. leave it as what it is from now)
     var result: GeneralDiskHashedRelation = null
 
     if (size > 0 && blockSize > 0 && input != null) {

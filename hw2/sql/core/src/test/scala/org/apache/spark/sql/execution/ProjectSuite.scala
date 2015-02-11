@@ -38,4 +38,16 @@ class ProjectSuite extends FunSuite {
 
     (2 to 10001).foreach(x => assert(seenValues.contains(Row(x))))
   }
+
+  //tests added by Daxi Li
+  test("PartitionProject-small") {
+    val outputRDD = PartitionProject(Seq(udf), smallScan).execute()
+    var seenValues: HashSet[Row] = new HashSet[Row]()
+
+    outputRDD.collect().foreach(x => seenValues = seenValues + x)
+
+    (2 to 101).foreach(x => assert(seenValues.contains(Row(x))))
+  }
+
+
 }

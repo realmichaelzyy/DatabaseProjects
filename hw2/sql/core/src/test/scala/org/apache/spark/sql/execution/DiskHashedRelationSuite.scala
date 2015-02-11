@@ -81,15 +81,6 @@ class DiskHashedRelationSuite extends FunSuite {
     assert(hashedRelation3==null)
   }
 
-  test("zero data as input"){
-    val data: Array[Row] = new Array[Row](0)
-    val hashedRelation: DiskHashedRelation = DiskHashedRelation(data.iterator, keyGenerator, 30, 64000)
-
-    for (partition <- hashedRelation.getIterator()) {
-      assert(partition.getData().hasNext != true)
-    }
-  }
-
   test("Only one partition") {
     val data: Array[Row] = (0 to 10000).map(i => Row(i)).toArray
     val hashedRelation: DiskHashedRelation = DiskHashedRelation(data.iterator, keyGenerator, 1, 64000)
@@ -114,5 +105,25 @@ class DiskHashedRelationSuite extends FunSuite {
     assert(partitionNum==1)
     assert(total==10001)
     hashedRelation.closeAllPartitions()
+  }
+
+  test("HashToOnePartition"){
+    val data: Array[Row] = (0 to 1000).map(i => Row(1)).toArray
+    val hashedRelation: DiskHashedRelation = DiskHashedRelation(data.iterator, keyGenerator, 5, 64000)
+    var hitYet:Boolean = false
+    var total: Int = 0
+
+    for (partition <- hashedRelation.getIterator()) {
+      val data = partition.getData()
+      if (data.hasNext&&hitYet){ //shouldn't get in this block
+        assert(false)
+      }
+      while(data.hasNext){
+        total += 1
+        hitYet = true
+        data.next()
+      }
+    }
+    assert(total==1001)
   }
 }
