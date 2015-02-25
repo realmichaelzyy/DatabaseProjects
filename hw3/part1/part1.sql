@@ -38,15 +38,15 @@ AS
   WITH DemocraticParty(id, com_name) as 
   (Select H.id, H.name 
   From committees H
-  Where H.pty_affiliation='DEM'),
+  Where lower(H.pty_affiliation) like 'dem' group by H.id, H.name),
   draft_Result(from_name, to_name, amount) as 
   (Select C.com_name, D.com_name, I.transaction_amt
   From intercommittee_transactions I, DemocraticParty D, DemocraticParty C
-  Where I.cmte_id = D.id And I.other_id = C.id)
+  Where C.id=I.other_id and D.id=I.cmte_id)
   Select N.from_name, N.to_name 
   from draft_Result N
   group by N.from_name, N.to_name
-  order by SUM(N.amount) Desc
+  order by count(N.from_name) Desc
   limit 10
 ;
 
@@ -56,11 +56,14 @@ AS
   WITH ObamaID(id) as
   (Select A.id 
   From candidates A 
-  where lower(A.name) like '%obama%')
-  Select Distinct C.name
-  from committee_contributions B, committees C
-  where B.cand_id Not in (select id from ObamaID) and B.cmte_id = C.id
-  
+  where lower(A.name) like '%obama%'),
+  ObamaMoney(id) as 
+  (Select Distinct B.cmte_id
+  from committee_contributions B
+  where B.cand_id in (select id from ObamaID))
+  Select name
+  from committees 
+  where id not in (select id from ObamaMoney)
 ;
 
 -- Question 4.
