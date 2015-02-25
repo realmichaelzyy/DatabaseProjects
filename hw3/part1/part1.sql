@@ -82,12 +82,23 @@ AS
 
 -- Question 5
 CREATE VIEW q5 (name, total_pac_donations) AS
-  SELECT 1,1 -- replace this line
+  WITH org_trans(id, amount) as 
+  (select I.cmte_id, sum(I.transaction_amt) 
+  from individual_contributions I
+  where lower(I.entity_tp) like '%org%' 
+  group by I.cmte_id)
+  select S.name, I.amount 
+  from committees S LEFT OUTER JOIN org_trans I
+  on S.id = I.id
 ;
 
 -- Question 6
 CREATE VIEW q6 (id) AS
-  SELECT 1 -- replace this line
+  with pac_id(id) as 
+  (select cand_id from committee_contributions 
+  where lower(entity_tp) like '%pac%' and cand_id is not null)
+  select Distinct cand_id from committee_contributions
+  where lower(entity_tp) like '%ccm%' and cand_id is not null and cand_id in (select * from pac_id)
 ;
 
 -- Question 7
