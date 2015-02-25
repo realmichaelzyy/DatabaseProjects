@@ -53,13 +53,28 @@ AS
 -- Question 3
 CREATE VIEW q3(name)
 AS
-	
+  WITH ObamaID(id) as
+  (Select A.id 
+  From candidates A 
+  where lower(A.name) like '%obama%')
+  Select Distinct C.name
+  from committee_contributions B, committees C
+  where B.cand_id Not in (select id from ObamaID) and B.cmte_id = C.id
+  
 ;
 
 -- Question 4.
 CREATE VIEW q4 (name)
 AS
-  SELECT 1 -- replace this line
+  with draft_data as 
+  (select A.cand_id from committee_contributions A group by A.cmte_id, A.cand_id),
+  unique_id_count(num) as 
+  (select count(A.id) from committees A group by A.id), 
+  TotalCommittee(total) as 
+  (select sum(B.num) from unique_id_count B), 
+  candidate_count(id, number) as 
+  (select A.cand_id, count(A.cand_id) from draft_data A group by A.cand_id)
+  select D.name from candidate_count C, TotalCommittee T, candidates D where (C.number/T.total)*100 > 1 and C.id = D.id;
 ;
 
 -- Question 5
