@@ -106,7 +106,7 @@ CREATE VIEW q7 (cand_name1, cand_name2) AS
   with RI_receiver(name, ide) as
   (select Distinct B.name, A.cmte_id from committee_contributions A, candidates B
   where A.state='RI' and A.cand_id is not null and A.cand_id=B.id)
-  select Distinct A.name , B.name 
-  from RI_receiver A, RI_receiver B
-  where A.name != B.name and A.ide = B.ide;
+  select Distinct A.name , D.name 
+  from RI_receiver A, RI_receiver D
+  where A.name != D.name and A.ide = D.ide;
 ;
