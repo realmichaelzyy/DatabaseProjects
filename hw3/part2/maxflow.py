@@ -9,8 +9,6 @@ def setup(test_file):
     Loads the a csv edge file from the tests directory into the database
     """
     test_path = "{path}/tests/{test_file}".format(path=os.getcwd(), test_file=test_file)
-    print("Daxi Here!\n")
-    print(test_path)
     db.execute("""
         DROP SCHEMA PUBLIC CASCADE; CREATE SCHEMA PUBLIC;
         CREATE TABLE original_edge (id SERIAL, src int, dst int, capacity int);
