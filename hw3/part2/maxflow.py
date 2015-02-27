@@ -120,7 +120,7 @@ def maxflow(bfs_max_iterations=float('inf'), flow_max_iterations=float('inf')):
                 SELECT unnest(path) AS path_edge FROM chosen_route
             ),
             constraining_capacity(capacity) AS (
-                ???
+                select min(E.capacity) from path_edges R, edge E where R.path_edge = E.id
             )
             SELECT path_edge AS edge_id, (SELECT * FROM constraining_capacity) as flow 
             INTO flow_to_route FROM path_edges;
@@ -130,12 +130,18 @@ def maxflow(bfs_max_iterations=float('inf'), flow_max_iterations=float('inf')):
         # Then, update the `edges` table
         db.execute("""
             WITH updates(id, new_capacity) AS (
-                ???
+                select V.reverse_id as id, R.capacity+F.flow as new_capacity 
+                from flow_to_route F, edge R, flip_edge V
+                where F.edge_id=V.forward_id and V.reverse_id=R.id 
+                union 
+                select F.edge_id as id, R.capacity-F.flow as new_capacity 
+                from flow_to_route F, edge R 
+                where F.edge_id=R.id
             )
             UPDATE edge
-              SET ???
+              SET capacity=updates.new_capacity
               FROM updates
-              WHERE ???;
+              WHERE edge.id = updates.id;
             """)
 
         # DO NOT EDIT
