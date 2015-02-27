@@ -9,6 +9,8 @@ def setup(test_file):
     Loads the a csv edge file from the tests directory into the database
     """
     test_path = "{path}/tests/{test_file}".format(path=os.getcwd(), test_file=test_file)
+    print("Daxi Here!\n")
+    print(test_path)
     db.execute("""
         DROP SCHEMA PUBLIC CASCADE; CREATE SCHEMA PUBLIC;
         CREATE TABLE original_edge (id SERIAL, src int, dst int, capacity int);
@@ -81,9 +83,11 @@ def maxflow(bfs_max_iterations=float('inf'), flow_max_iterations=float('inf')):
             # Hints: a JOIN would be helpful here. Also check the documentation to
             # see how array concatenation work in Postgres.
             db.execute("""
-                    SELECT ???
-                    INTO tmp
-                    ???;
+                    select p.path||e.id as path,
+                           p.nodes||e.dst as nodes 
+                    into tmp 
+                    from paths p, edge e 
+                    where e.src=p.nodes[array_length(nodes,1)] and not e.dst = any(p.nodes) and e.capacity > 0;
 
                     DROP TABLE IF EXISTS paths CASCADE;
                     ALTER TABLE tmp RENAME TO paths;
