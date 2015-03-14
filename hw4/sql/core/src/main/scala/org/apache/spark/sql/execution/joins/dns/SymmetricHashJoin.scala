@@ -3,6 +3,7 @@ package org.apache.spark.sql.execution.joins.dns
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{Expression, JoinedRow, Projection}
 import org.apache.spark.sql.execution.SparkPlan
+import java.util.{ArrayList => JavaArrayList, HashMap => JavaHashMap}
 import org.apache.spark.sql.execution.joins.BuildSide
 import org.apache.spark.util.collection.CompactBuffer
 
@@ -62,6 +63,16 @@ trait SymmetricHashJoin {
     new Iterator[Row] {
       /* Remember that Scala does not have any constructors. Whatever code you write here serves as a constructor. */
       // IMPLEMENT ME
+      //variable for recording states
+      var nextItem:JoinedRow = null
+      var isLeftCurrentInsertion:Boolean = true
+      var lookupKey: Projection = rightKeyGenerator
+      var insertionKey: Projection = leftKeyGenerator
+      var tableForLookUp: JavaHashMap[Row, Row] =  new JavaHashMap[Row, Row]()
+      var tableForInsertion: JavaHashMap[Row, Row] = new JavaHashMap[Row, Row]()
+      var currentStream: Iterator[Row] = leftIter
+      //indicator for left or right ended or not
+
 
       /**
        * This method returns the next joined tuple.
@@ -70,6 +81,10 @@ trait SymmetricHashJoin {
        */
       override def next() = {
         // IMPLEMENT ME
+        findNextMatch() //do nothing if nextItem is already not null
+        val result:JoinedRow = nextItem
+        nextItem = null
+        result
       }
 
       /**
@@ -79,6 +94,7 @@ trait SymmetricHashJoin {
        */
       override def hasNext() = {
         // IMPLEMENT ME
+        findNextMatch()
       }
 
       /**
@@ -86,6 +102,22 @@ trait SymmetricHashJoin {
        */
       private def switchRelations() = {
         // IMPLEMENT ME
+        if ((isLeftCurrentInsertion&&rightIter.hasNext)||(!isLeftCurrentInsertion&&leftIter.hasNext)) {
+          if (isLeftCurrentInsertion) {
+            isLeftCurrentInsertion = false
+            lookupKey = leftKeyGenerator
+            insertionKey = rightKeyGenerator
+            currentStream = rightIter
+          } else {
+            isLeftCurrentInsertion = true
+            lookupKey = rightKeyGenerator
+            insertionKey = leftKeyGenerator
+            currentStream = leftIter
+          }
+          val temp: JavaHashMap[Row, Row] = tableForLookUp
+          tableForLookUp = tableForInsertion
+          tableForInsertion = temp
+        }//otherwise no need to switch
       }
 
       /**
@@ -94,7 +126,24 @@ trait SymmetricHashJoin {
        * @return whether or not a match was found
        */
       def findNextMatch(): Boolean = {
-        // IMPLEMENT ME
+        var result = false
+        if (nextItem == null&&leftIter!=null&&rightIter!=null){
+          if (!currentStream.hasNext){
+            switchRelations()
+          }
+          while (nextItem == null && (leftIter.hasNext || rightIter.hasNext)){
+            val streamIn:Row = currentStream.next()
+            tableForInsertion.put(insertionKey(streamIn), streamIn)
+            val lookupResult: Row = tableForLookUp.get(lookupKey(streamIn))
+            if (lookupResult != null){
+              nextItem = new JoinedRow(streamIn, lookupResult)
+              result = true
+            }else{
+              switchRelations()
+            }
+          }
+        }//note: seem like won't run into the case when currentSteam has no next, double check in the future
+        result
       }
     }
   }
