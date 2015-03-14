@@ -71,7 +71,6 @@ trait SymmetricHashJoin {
       var tableForLookUp: JavaHashMap[Row, Row] =  new JavaHashMap[Row, Row]()
       var tableForInsertion: JavaHashMap[Row, Row] = new JavaHashMap[Row, Row]()
       var currentStream: Iterator[Row] = leftIter
-      //indicator for left or right ended or not
 
 
       /**
@@ -131,6 +130,8 @@ trait SymmetricHashJoin {
           if (!currentStream.hasNext){
             switchRelations()
           }
+          //it's ok if the program switches to a relation done streaming above
+          //in this case means both relations are done, won't enter the loop below
           while (nextItem == null && (leftIter.hasNext || rightIter.hasNext)){
             val streamIn:Row = currentStream.next()
             tableForInsertion.put(insertionKey(streamIn), streamIn)
@@ -142,7 +143,7 @@ trait SymmetricHashJoin {
               switchRelations()
             }
           }
-        }//note: seem like won't run into the case when currentSteam has no next, double check in the future
+        }
         result
       }
     }
