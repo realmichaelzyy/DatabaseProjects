@@ -3,7 +3,6 @@ package org.apache.spark.sql.execution.joins.dns
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{Expression, JoinedRow, Projection}
 import org.apache.spark.sql.execution.SparkPlan
-import java.util.{ArrayList => JavaArrayList, HashMap => JavaHashMap}
 import org.apache.spark.sql.execution.joins.BuildSide
 import org.apache.spark.util.collection.CompactBuffer
 
@@ -68,8 +67,8 @@ trait SymmetricHashJoin {
       var isLeftCurrentInsertion:Boolean = true
       var lookupKey: Projection = rightKeyGenerator
       var insertionKey: Projection = leftKeyGenerator
-      var tableForLookUp: JavaHashMap[Row, Row] =  new JavaHashMap[Row, Row]()
-      var tableForInsertion: JavaHashMap[Row, Row] = new JavaHashMap[Row, Row]()
+      var tableForLookUp: HashMap[Row, Row] =  new HashMap[Row, Row]()
+      var tableForInsertion: HashMap[Row, Row] = new HashMap[Row, Row]()
       var currentStream: Iterator[Row] = leftIter
 
 
@@ -113,7 +112,7 @@ trait SymmetricHashJoin {
             insertionKey = leftKeyGenerator
             currentStream = leftIter
           }
-          val temp: JavaHashMap[Row, Row] = tableForLookUp
+          val temp: HashMap[Row, Row] = tableForLookUp
           tableForLookUp = tableForInsertion
           tableForInsertion = temp
         }//otherwise no need to switch
@@ -135,15 +134,16 @@ trait SymmetricHashJoin {
           while (nextItem == null && (leftIter.hasNext || rightIter.hasNext)){
             val streamIn:Row = currentStream.next()
             tableForInsertion.put(insertionKey(streamIn), streamIn)
-            val lookupResult: Row = tableForLookUp.get(lookupKey(streamIn))
-            if (lookupResult != null){
-              nextItem = new JoinedRow(streamIn, lookupResult)
+            val lookupResult:Option[Row] = tableForLookUp.get(lookupKey(streamIn))
+            if (lookupResult != None){
+              nextItem = new JoinedRow(streamIn, lookupResult.get)
               result = true
             }else{
               switchRelations()
             }
           }
         }
+
         result
       }
     }
