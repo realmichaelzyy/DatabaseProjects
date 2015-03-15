@@ -1,11 +1,13 @@
 package org.apache.spark.sql.execution.joins.dns
 
-import java.util.{HashMap => JavaHashMap, ArrayList => JavaArrayList}
+import java.util.{HashMap => JavaHashMap, ArrayList => JavaArrayList, Iterator => JavaIterator}
 import java.util.concurrent.ConcurrentHashMap
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions.{JoinedRow, Projection, Expression}
 import org.apache.spark.sql.execution.SparkPlan
+
+import scala.collection.mutable
 
 /**
  * In this join, we are going to implement an algorithm similar to symmetric hash join.
@@ -54,8 +56,8 @@ trait DNSJoin {
    *
    * If you find the method definitions provided to be counter-intuitive or constraining, feel free to change them.
    * However, note that if you do:
-   *  1. we will have a harder time helping you debug your code.
-   *  2. Iterators must implement next and hasNext. If you do not implement those two methods, your code will not compile.
+   * 1. we will have a harder time helping you debug your code.
+   * 2. Iterators must implement next and hasNext. If you do not implement those two methods, your code will not compile.
    *
    * **NOTE**: You should return JoinedRows, which take two input rows and returns the concatenation of them.
    * e.g., `new JoinedRow(row1, row2)`
@@ -66,6 +68,16 @@ trait DNSJoin {
   def hashJoin(input: Iterator[Row]): Iterator[Row] = {
     new Iterator[Row] {
       // IMPLEMENT ME
+      // Limit those 3 buffer to under requestBufferSize, well ResultBuffer may slightly pass the limit.
+      val responseBuffer: ConcurrentHashMap[Int, Row] = new ConcurrentHashMap[Int, Row]()
+      val requestBuffer: ConcurrentHashMap[Int, Row] = new ConcurrentHashMap[Int, Row]()
+      val pairedResultBuffer: JavaArrayList[JoinedRow] = new JavaArrayList[JoinedRow]()
+
+      val localCache: JavaHashMap[Row, JoinedRow] = new JavaHashMap[Row, JoinedRow]()
+
+      //to save memory
+      var circleID = 0
+
 
       /**
        * This method returns the next joined tuple.
@@ -74,7 +86,13 @@ trait DNSJoin {
        */
       override def next() = {
         // IMPLEMENT ME
-        null
+        var result:Row = null
+
+        if (hasNext()){
+          result = pairedResultBuffer.remove(0)
+        }
+
+        result
       }
 
       /**
@@ -84,16 +102,68 @@ trait DNSJoin {
        */
       override def hasNext() = {
         // IMPLEMENT ME
-        false
+        fillRequestBuffer()
+        while (requestBuffer.size() != 0 && pairedResultBuffer.size() == 0) {
+          checkAndCleanBuffer()
+        }
+
+        pairedResultBuffer.size() != 0
       }
 
 
       /**
        * This method takes the next element in the input iterator and makes an asynchronous request for it.
        */
-      private def makeRequest() = {
+      private def makeRequest(inputRow: Row) = {
         // IMPLEMENT ME
+        if (requestBuffer.size() < requestBufferSize) {
+          val keyIp:Row = leftKeyGenerator(inputRow)
+          while (requestBuffer.containsKey(circleID)){
+            circleID = (circleID + 1) % requestBufferSize
+          }
+          requestBuffer.put(circleID, inputRow)
+          DNSLookup.lookup(circleID, keyIp.getString(0), responseBuffer, requestBuffer)
+        }
+      }
+
+      private def fillRequestBuffer() ={
+        while (requestBuffer.size()<requestBufferSize && input.hasNext){
+          val item: Row = input.next()
+          val key: Row = leftKeyGenerator(item)
+          if (localCache.containsKey(key)){
+            pairedResultBuffer.add(new JoinedRow(item, localCache.get(key)))
+          }else{
+            makeRequest(item)
+          }
+        }
+      }
+
+      private def checkAndCleanBuffer() ={
+        //clear up buffer => cache, and prepare for output list
+        //fill up output list
+        while (pairedResultBuffer.size() < requestBufferSize && requestBuffer.size() > 0 && responseBuffer.size() > 0){
+          val keys:JavaIterator[Int] = responseBuffer.keySet().iterator()
+          while (keys.hasNext()){
+            val key = keys.next()
+            val rowResponse: Row = responseBuffer.get(key)
+            val rowRequest: Row = requestBuffer.get(key)
+            val result: JoinedRow = new JoinedRow(rowRequest, rowResponse)
+            requestBuffer.remove(key)
+            responseBuffer.remove(key)
+            localCache.put(leftKeyGenerator(rowRequest), result)
+            pairedResultBuffer.add(result)
+          }
+        }
       }
     }
   }
 }
+
+
+
+
+
+
+
+
+
