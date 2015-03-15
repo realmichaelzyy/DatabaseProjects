@@ -64,12 +64,12 @@ trait SymmetricHashJoin {
       // IMPLEMENT ME
       //variable for recording states
       var nextItem:JoinedRow = null
-      var isLeftCurrentInsertion:Boolean = true
-      var lookupKey: Projection = rightKeyGenerator
-      var insertionKey: Projection = leftKeyGenerator
+      var isLeftCurrentInsertion:Boolean = false
+      var lookupKey: Projection = leftKeyGenerator
+      var insertionKey: Projection =  rightKeyGenerator
       var tableForLookUp: HashMap[Row, Row] =  new HashMap[Row, Row]()
       var tableForInsertion: HashMap[Row, Row] = new HashMap[Row, Row]()
-      var currentStream: Iterator[Row] = leftIter
+      var currentStream: Iterator[Row] = rightIter
 
 
       /**
@@ -79,7 +79,7 @@ trait SymmetricHashJoin {
        */
       override def next() = {
         // IMPLEMENT ME
-        findNextMatch() //do nothing if nextItem is already not null
+        findNextMatch() //do nothing if nextItem is already found
         val result:JoinedRow = nextItem
         nextItem = null
         result
@@ -100,6 +100,7 @@ trait SymmetricHashJoin {
        */
       private def switchRelations() = {
         // IMPLEMENT ME
+        //will not switch to an empty stream
         if ((isLeftCurrentInsertion&&rightIter.hasNext)||(!isLeftCurrentInsertion&&leftIter.hasNext)) {
           if (isLeftCurrentInsertion) {
             isLeftCurrentInsertion = false
@@ -124,26 +125,20 @@ trait SymmetricHashJoin {
        * @return whether or not a match was found
        */
       def findNextMatch(): Boolean = {
+        // IMPLEMENT ME
         var result = false
         if (nextItem == null&&leftIter!=null&&rightIter!=null){
-          if (!currentStream.hasNext){
-            switchRelations()
-          }
-          //it's ok if the program switches to a relation done streaming above
-          //in this case means both relations are done, won't enter the loop below
           while (nextItem == null && (leftIter.hasNext || rightIter.hasNext)){
+            switchRelations()
             val streamIn:Row = currentStream.next()
             tableForInsertion.put(insertionKey(streamIn), streamIn)
             val lookupResult:Option[Row] = tableForLookUp.get(lookupKey(streamIn))
             if (lookupResult != None){
               nextItem = new JoinedRow(streamIn, lookupResult.get)
               result = true
-            }else{
-              switchRelations()
             }
           }
         }
-
         result
       }
     }
