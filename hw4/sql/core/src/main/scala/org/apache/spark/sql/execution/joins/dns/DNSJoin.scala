@@ -72,6 +72,8 @@ trait DNSJoin {
       val responseBuffer: ConcurrentHashMap[Int, Row] = new ConcurrentHashMap[Int, Row]()
       val requestBuffer: ConcurrentHashMap[Int, Row] = new ConcurrentHashMap[Int, Row]()
       val pairedResultBuffer: JavaArrayList[JoinedRow] = new JavaArrayList[JoinedRow]()
+      //the following is created to avoid duplicate request
+      val countForDuplicateRequest:JavaHashMap[Row, Int] = new JavaHashMap[Row, Int]()
 
       val localCache: JavaHashMap[Row, JoinedRow] = new JavaHashMap[Row, JoinedRow]()
 
@@ -132,8 +134,11 @@ trait DNSJoin {
           val key: Row = leftKeyGenerator(item)
           if (localCache.containsKey(key)){
             pairedResultBuffer.add(new JoinedRow(item, localCache.get(key)))
+          }else if (countForDuplicateRequest.containsKey(key)){ //already request sent, no need to resend
+            countForDuplicateRequest.put(key, countForDuplicateRequest.get(key)+1)
           }else{
             makeRequest(item)
+            countForDuplicateRequest.put(key, 1)
           }
         }
       }
@@ -148,10 +153,17 @@ trait DNSJoin {
             val rowResponse: Row = responseBuffer.get(key)
             val rowRequest: Row = requestBuffer.get(key)
             val result: JoinedRow = new JoinedRow(rowRequest, rowResponse)
+            val KeyIp: Row = leftKeyGenerator(rowRequest)
+            val duplicateCount:Int = countForDuplicateRequest.get(KeyIp)
+
             requestBuffer.remove(key)
             responseBuffer.remove(key)
             localCache.put(leftKeyGenerator(rowRequest), result)
-            pairedResultBuffer.add(result)
+            //duplicate add
+            for (i<-1 to duplicateCount) {
+              pairedResultBuffer.add(result)
+            }
+            countForDuplicateRequest.remove(KeyIp)
           }
         }
       }
