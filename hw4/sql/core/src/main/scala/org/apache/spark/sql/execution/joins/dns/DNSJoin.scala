@@ -129,7 +129,7 @@ trait DNSJoin {
       }
 
       private def fillRequestBuffer() ={
-        while (requestBuffer.size()<requestBufferSize && input.hasNext){
+        while (requestBuffer.size()<requestBufferSize && pairedResultBuffer.size() < requestBufferSize && input.hasNext){
           val item: Row = input.next()
           val key: Row = leftKeyGenerator(item)
           if (localCache.containsKey(key)){
