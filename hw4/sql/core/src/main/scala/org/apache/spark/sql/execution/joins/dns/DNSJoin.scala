@@ -153,17 +153,17 @@ trait DNSJoin {
             val rowResponse: Row = responseBuffer.get(key)
             val rowRequest: Row = requestBuffer.get(key)
             val result: JoinedRow = new JoinedRow(rowRequest, rowResponse)
-            val KeyIp: Row = leftKeyGenerator(rowRequest)
-            val duplicateCount:Int = countForDuplicateRequest.get(KeyIp)
+            val keyIp: Row = leftKeyGenerator(rowRequest)
+            val duplicateCount:Int = countForDuplicateRequest.get(keyIp)
 
             requestBuffer.remove(key)
             responseBuffer.remove(key)
-            localCache.put(leftKeyGenerator(rowRequest), result)
+            localCache.put(keyIp, result)
             //duplicate add
             for (i<-1 to duplicateCount) {
               pairedResultBuffer.add(result)
             }
-            countForDuplicateRequest.remove(KeyIp)
+            countForDuplicateRequest.remove(keyIp)
           }
         }
       }
