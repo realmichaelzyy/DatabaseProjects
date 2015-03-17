@@ -146,7 +146,7 @@ class SymmetricHashJoinSuite extends FunSuite {
         }
       }
     }
-    assert(countSize==50)
+    assert(seenValues.size==countSize && countSize==50)
   }
 
 
