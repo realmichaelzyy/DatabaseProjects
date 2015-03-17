@@ -6,8 +6,9 @@ import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.joins.BuildSide
 import org.apache.spark.util.collection.CompactBuffer
 
-import scala.collection.mutable.HashMap
-
+import scala.collection.mutable
+import scala.collection.mutable.{HashMap, HashSet}
+import java.util.{ArrayList => JavaArrayList}
 /**
  * ***** TASK 1 ******
  *
@@ -63,14 +64,12 @@ trait SymmetricHashJoin {
       /* Remember that Scala does not have any constructors. Whatever code you write here serves as a constructor. */
       // IMPLEMENT ME
       //variable for recording states
-      var nextItem:JoinedRow = null
-      var isLeftCurrentInsertion:Boolean = false
-      var lookupKey: Projection = leftKeyGenerator
-      var insertionKey: Projection =  rightKeyGenerator
-      var tableForLookUp: HashMap[Row, Row] =  new HashMap[Row, Row]()
-      var tableForInsertion: HashMap[Row, Row] = new HashMap[Row, Row]()
+      val pairedResultBuffer: JavaArrayList[JoinedRow] = new JavaArrayList[JoinedRow]()
+      var isLeftCurrentStream:Boolean = false
       var currentStream: Iterator[Row] = rightIter
-
+      var currentKeyGenerator: Projection =  rightKeyGenerator
+      var tableForLookUp: HashMap[Row, HashSet[Row]] =  new HashMap[Row, HashSet[Row]]()
+      var tableForInsertion: HashMap[Row, HashSet[Row]] = new HashMap[Row, HashSet[Row]]()
 
       /**
        * This method returns the next joined tuple.
@@ -79,10 +78,10 @@ trait SymmetricHashJoin {
        */
       override def next() = {
         // IMPLEMENT ME
-        findNextMatch() //do nothing if nextItem is already found
-        val result:JoinedRow = nextItem
-        nextItem = null
-        result
+        if (!hasNext()){
+          throw new NoSuchElementException
+        }
+        pairedResultBuffer.remove(0)
       }
 
       /**
@@ -93,30 +92,38 @@ trait SymmetricHashJoin {
       override def hasNext() = {
         // IMPLEMENT ME
         findNextMatch()
+        !pairedResultBuffer.isEmpty()
       }
 
       /**
        * This method is intended to switch the inner & outer relations.
        */
+
       private def switchRelations() = {
         // IMPLEMENT ME
         //will not switch to an empty stream
-        if ((isLeftCurrentInsertion&&rightIter.hasNext)||(!isLeftCurrentInsertion&&leftIter.hasNext)) {
-          if (isLeftCurrentInsertion) {
-            isLeftCurrentInsertion = false
-            lookupKey = leftKeyGenerator
-            insertionKey = rightKeyGenerator
+        if ((isLeftCurrentStream&&rightIter.hasNext)||(!isLeftCurrentStream&&leftIter.hasNext)) {
+          if (isLeftCurrentStream) {
             currentStream = rightIter
+            currentKeyGenerator = rightKeyGenerator
           } else {
-            isLeftCurrentInsertion = true
-            lookupKey = rightKeyGenerator
-            insertionKey = leftKeyGenerator
             currentStream = leftIter
+            currentKeyGenerator = leftKeyGenerator
           }
-          val temp: HashMap[Row, Row] = tableForLookUp
+          isLeftCurrentStream = !isLeftCurrentStream
+
+          val temp: HashMap[Row, HashSet[Row]] = tableForLookUp
           tableForLookUp = tableForInsertion
           tableForInsertion = temp
         }//otherwise no need to switch
+      }
+
+      def joinRowWithOrder(streamIn: Row, lookupResults: HashSet[Row]) = {
+        if (isLeftCurrentStream){
+          lookupResults.foreach(x=>pairedResultBuffer.add(new JoinedRow(streamIn, x)))
+        }else{
+          lookupResults.foreach(x=>pairedResultBuffer.add(new JoinedRow(x, streamIn)))
+        }
       }
 
       /**
@@ -124,17 +131,26 @@ trait SymmetricHashJoin {
        *
        * @return whether or not a match was found
        */
+
       def findNextMatch(): Boolean = {
         // IMPLEMENT ME
         var result = false
-        if (nextItem == null&&leftIter!=null&&rightIter!=null){
-          while (nextItem == null && (leftIter.hasNext || rightIter.hasNext)){
+        if (leftIter!=null&&rightIter!=null){
+          while (pairedResultBuffer.isEmpty() && (leftIter.hasNext || rightIter.hasNext)){
             switchRelations()
             val streamIn:Row = currentStream.next()
-            tableForInsertion.put(insertionKey(streamIn), streamIn)
-            val lookupResult:Option[Row] = tableForLookUp.get(lookupKey(streamIn))
+            val key: Row = currentKeyGenerator(streamIn)
+
+            val insertResult:Option[HashSet[Row]] = tableForInsertion.get(key)
+            if (insertResult != None){
+              (insertResult.get)+=(streamIn)
+            }else{
+              tableForInsertion.put(key, (new HashSet[Row]())+=streamIn)
+            }
+
+            val lookupResult:Option[HashSet[Row]] = tableForLookUp.get(key)
             if (lookupResult != None){
-              nextItem = new JoinedRow(streamIn, lookupResult.get)
+              joinRowWithOrder(streamIn, lookupResult.get)
               result = true
             }
           }
