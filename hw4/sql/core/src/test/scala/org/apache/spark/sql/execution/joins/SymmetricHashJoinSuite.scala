@@ -34,7 +34,7 @@ class SymmetricHashJoinSuite extends FunSuite {
 
 
 
- test ("simple join") {
+  test ("simple join") {
     val outputRDD = GeneralSymmetricHashJoin(recordAttributes, recordAttributes, smallScan1, smallScan2).execute()
     var seenValues: HashSet[Row] = new HashSet[Row]()
 
@@ -54,11 +54,119 @@ class SymmetricHashJoinSuite extends FunSuite {
 
 
   //added by Daxi Li
+  val orderMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((100 to 300).map(i => ComplicatedRecord(i*2, "Left", i)), 1)
+  val orderMatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, orderMatchRDD1)
+  val orderMatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((200 to 350).map(i => ComplicatedRecord(i, "Right", i*2)), 1)
+  val orderMatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, orderMatchRDD2)
+  test ("left right joined order check        [Added by Daxi]"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(2)), Seq(complicatedAttributes(0)), orderMatchScan1, orderMatchScan2).execute()
+    var seenValues: HashSet[Row] = new HashSet[Row]()
+
+    outputRDD.collect().foreach(x => seenValues = seenValues + x)
+    assert(seenValues.size == 101)
+    (200 to 300).foreach(x => assert(seenValues.contains(new JoinedRow(Row(x*2, "Left", x), Row(x, "Right", x*2)))))
+  }
+
+  def duplicateMapping(i:Int):ComplicatedRecord={
+    var result:ComplicatedRecord = null
+    if (i%10==0){
+      result = ComplicatedRecord(999999, "I am duplicate", 999999)
+    }else{
+      result = ComplicatedRecord(i, "I am unique", i)
+    }
+    result
+
+  }
+  val dupMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 350).map(duplicateMapping), 1)
+  val dupMatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, dupMatchRDD1)
+  val dupMatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((200 to 500).map(duplicateMapping), 1)
+  val dupMatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, dupMatchRDD2)
+  test ("duplicate output                     [Added by Daxi]"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(2)), Seq(complicatedAttributes(0)), dupMatchScan1, dupMatchScan2).execute()
+    val seenValues: JavaArrayList[Row] = new JavaArrayList[Row]()
+
+    outputRDD.collect().foreach(x => seenValues.add(x))
+    //(0 to seenValues.size()-1).foreach(x=> println(seenValues.get(x)))
+    val duplicateRow:Row = new JoinedRow(Row(999999, "I am duplicate", 999999), Row(999999, "I am duplicate", 999999))
+    var countOccur:Int = 0
+    assert(seenValues.contains(duplicateRow))
+    for (i<-200 to 350){
+      if (i%10!=0){
+        assert(seenValues.contains(new JoinedRow(Row(i, "I am unique", i), Row(i, "I am unique", i))))
+      }
+    }
+
+    for (j<-0 until seenValues.size()){
+      if (seenValues.get(j)== duplicateRow){
+        countOccur += 1
+      }
+    }
+    assert(countOccur == 65)
+  }
+
+  val multiMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((100 to 300).map(i => ComplicatedRecord(i, "Left", i%150)), 1)
+  val multiMatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, multiMatchRDD1)
+  val multiMatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 1000).map(i => ComplicatedRecord(i%150, "Right", i)), 1)
+  val multiMatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, multiMatchRDD2)
+  test ("multiple rows share the same key    [Added by Daxi](large)"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(2)), Seq(complicatedAttributes(0)), multiMatchScan1, multiMatchScan2).execute()
+    var seenValues: HashSet[Row] = new HashSet[Row]()
+
+    outputRDD.collect().foreach(x => seenValues = seenValues + x)
+    //run slow but it's ok since this is just a test
+    var countSize = 0
+    for (i<-100 to 300){
+      for (j<-1 to 1000){
+        if (i%150 == j%150){
+          countSize += 1
+          assert(seenValues.contains(new JoinedRow(Row(i, "Left", i%150), Row(j%150, "Right", j))))
+        }
+      }
+    }
+
+    assert(countSize==seenValues.size)
+  }
+
+  val multiSMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 10).map(i => ComplicatedRecord(i, "Left", i%2)), 1)
+  val multiSMatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, multiSMatchRDD1)
+  val multiSMatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 10).map(i => ComplicatedRecord(i%2, "Right", i)), 1)
+  val multiSMatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, multiSMatchRDD2)
+  test ("multiple rows share the same key     [Added by Daxi](small)"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(2)), Seq(complicatedAttributes(0)), multiSMatchScan1, multiSMatchScan2).execute()
+    var seenValues: HashSet[Row] = new HashSet[Row]()
+
+    outputRDD.collect().foreach(x => seenValues = seenValues + x)
+    //run slow but it's ok since this is just a test
+    var countSize = 0
+    for (i<-1 to 10){
+      for (j<-1 to 10){
+        if (i%2 == j%2){
+          countSize += 1
+          assert(seenValues.contains(new JoinedRow(Row(i, "Left", i%2), Row(j%2, "Right", j))))
+        }
+      }
+    }
+    assert(countSize==50)
+  }
+
+
+  val diffRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((100 to 300).map(i => ComplicatedRecord(i*2, "Left", i)), 1)
+  val diffScan1: SparkPlan = PhysicalRDD(complicatedAttributes, diffRDD1)
+  val diffRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((200 to 350).map(i => ComplicatedRecord(i, "Right", i*2)), 1)
+  val diffScan2: SparkPlan = PhysicalRDD(complicatedAttributes, diffRDD2)
+  test ("no matching because of key            [Added by Daxi]"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(1)), Seq(complicatedAttributes(0)), diffScan1, diffScan2).execute()
+    var seenValues: HashSet[Row] = new HashSet[Row]()
+
+    outputRDD.collect().foreach(x => seenValues = seenValues + x)
+    assert(seenValues.size == 0)
+  }
+
   val noMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 100).map(i => ComplicatedRecord(i, i.toString, i*2)), 1)
   val noMatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, noMatchRDD1)
   val noMatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((101 to 150).map(i => ComplicatedRecord(i, i.toString, i*2)), 1)
   val noMatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, noMatchRDD2)
-  test ("no matching join                     [Added by Daxi]"){
+  test ("no cross set                         [Added by Daxi]"){
     val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(0)), Seq(complicatedAttributes(0)), noMatchScan1, noMatchScan2).execute()
     var seenValues: HashSet[Row] = new HashSet[Row]()
     outputRDD.collect().foreach(x => seenValues = seenValues + x)
