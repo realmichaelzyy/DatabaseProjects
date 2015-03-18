@@ -80,6 +80,7 @@ trait DNSJoin {
       //to save memory
       var circleID:Int = 0
 
+      //debug info
 
       /**
        * This method returns the next joined tuple.
@@ -91,7 +92,7 @@ trait DNSJoin {
         if (!hasNext()){
           throw new NoSuchElementException
         }
-        println(pairedResultBuffer.get(0))
+
         pairedResultBuffer.remove(0)
       }
 
