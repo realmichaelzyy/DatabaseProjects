@@ -8,6 +8,7 @@ import org.apache.spark.sql.execution.joins.dns.GeneralDNSJoin
 import org.apache.spark.sql.execution.{PhysicalRDD, SparkPlan}
 import org.apache.spark.sql.test.TestSQLContext._
 import org.scalatest.FunSuite
+import org.apache.spark.sql.execution.{Record, ComplicatedRecord, PhysicalRDD, SparkPlan}
 
 import scala.collection.mutable.HashSet
 import scala.util.Random
@@ -46,4 +47,58 @@ class DNSJoinSuite extends FunSuite {
       createdIPs remove ip
     })
   }
+
+  //added by Daxi
+  /*
+  val recordAttributes: Seq[Attribute] = ScalaReflection.attributesFor[Record]
+  val complicatedAttributes: Seq[Attribute] = ScalaReflection.attributesFor[ComplicatedRecord]
+
+
+
+  val sameRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 1000).map(mapTwoIP), 1)
+  val sameScan1: SparkPlan = PhysicalRDD(complicatedAttributes, sameRDD1)
+  def mapTwoIP(i:Int) = {
+    var ip:ComplicatedRecord = ComplicatedRecord(i, "144.86.80.118", i*2)
+    if (i % 2 == 0){
+      ip = ComplicatedRecord(1, "144.86.80.118", 1)
+    }
+    ip
+  }
+
+
+  test ("Eyeballing test, total request made"){
+    val outputRDD = GeneralDNSJoin(Seq(complicatedAttributes(1)), Seq(complicatedAttributes(1)), sameScan1, sameScan1).execute()
+    val result = outputRDD.collect
+    assert(result.length == 1000)
+    //println(IPAttributes)
+  }*/ //Eyeballing section looks good
+  val complicatedAttributes: Seq[Attribute] = ScalaReflection.attributesFor[ComplicatedRecord]
+  val sameRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to 1000).map(mapTwoIP), 1)
+  val sameScan1: SparkPlan = PhysicalRDD(complicatedAttributes, sameRDD1)
+  def mapTwoIP(i:Int) = {
+    ComplicatedRecord(1, "58.55.187.8", i*2)
+  }
+  test("Row with same IP, different other attributes"){
+    val outputRDD = GeneralDNSJoin(Seq(complicatedAttributes(1)), Seq(complicatedAttributes(1)), sameScan1, sameScan1).execute()
+    val result = outputRDD.collect
+  }
+
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -73,12 +73,12 @@ trait DNSJoin {
       val requestBuffer: ConcurrentHashMap[Int, Row] = new ConcurrentHashMap[Int, Row]()
       val pairedResultBuffer: JavaArrayList[JoinedRow] = new JavaArrayList[JoinedRow]()
       //the following is created to avoid duplicate request
-      val countForDuplicateRequest:JavaHashMap[Row, Int] = new JavaHashMap[Row, Int]()
+      val rowsShareTheSameKeyRequest:JavaHashMap[Row, JavaArrayList[Row]] = new JavaHashMap[Row, JavaArrayList[Row]]()
 
-      val localCache: JavaHashMap[Row, JoinedRow] = new JavaHashMap[Row, JoinedRow]()
-
+      val localCache: JavaHashMap[Row, Row] = new JavaHashMap[Row, Row]()
+      var currentInQueue: Int = 0
       //to save memory
-      var circleID = 0
+      var circleID:Int = 0
 
 
       /**
@@ -88,13 +88,11 @@ trait DNSJoin {
        */
       override def next() = {
         // IMPLEMENT ME
-        var result:Row = null
-
-        if (hasNext()){
-          result = pairedResultBuffer.remove(0)
+        if (!hasNext()){
+          throw new NoSuchElementException
         }
-
-        result
+        println(pairedResultBuffer.get(0))
+        pairedResultBuffer.remove(0)
       }
 
       /**
@@ -129,16 +127,22 @@ trait DNSJoin {
       }
 
       private def fillRequestBuffer() ={
-        while (requestBuffer.size()<requestBufferSize && pairedResultBuffer.size() < requestBufferSize && input.hasNext){
+        while (requestBuffer.size()<requestBufferSize && pairedResultBuffer.size() < requestBufferSize && currentInQueue < requestBufferSize && input.hasNext){
           val item: Row = input.next()
           val key: Row = leftKeyGenerator(item)
           if (localCache.containsKey(key)){
             pairedResultBuffer.add(new JoinedRow(item, localCache.get(key)))
-          }else if (countForDuplicateRequest.containsKey(key)){ //already request sent, no need to resend
-            countForDuplicateRequest.put(key, countForDuplicateRequest.get(key)+1)
           }else{
-            makeRequest(item)
-            countForDuplicateRequest.put(key, 1)
+            var sameKeyRowList: JavaArrayList[Row] = null
+            if (rowsShareTheSameKeyRequest.containsKey(key)){ //already request sent, no need to resend
+              sameKeyRowList = rowsShareTheSameKeyRequest.get(key)
+            }else{
+              makeRequest(item)
+              sameKeyRowList = new JavaArrayList[Row]()
+            }
+            currentInQueue += 1
+            sameKeyRowList.add(item)
+            rowsShareTheSameKeyRequest.put(key, sameKeyRowList)
           }
         }
       }
@@ -149,21 +153,17 @@ trait DNSJoin {
         while (pairedResultBuffer.size() < requestBufferSize && requestBuffer.size() > 0 && responseBuffer.size() > 0){
           val keys:JavaIterator[Int] = responseBuffer.keySet().iterator()
           while (keys.hasNext()){
-            val key = keys.next()
-            val rowResponse: Row = responseBuffer.get(key)
-            val rowRequest: Row = requestBuffer.get(key)
-            val result: JoinedRow = new JoinedRow(rowRequest, rowResponse)
-            val keyIp: Row = leftKeyGenerator(rowRequest)
-            val duplicateCount:Int = countForDuplicateRequest.get(keyIp)
+            val requestID = keys.next()
+            val rowRequest:Row = requestBuffer.get(requestID)
+            val rowResponse:Row = responseBuffer.get(requestID)
+            val key:Row = leftKeyGenerator(rowRequest)
+            val rowsShareTheSameKey:JavaArrayList[Row] = rowsShareTheSameKeyRequest.get(key)
 
-            requestBuffer.remove(key)
-            responseBuffer.remove(key)
-            localCache.put(keyIp, result)
-            //duplicate add
-            for (i<-1 to duplicateCount) {
-              pairedResultBuffer.add(result)
-            }
-            countForDuplicateRequest.remove(keyIp)
+            requestBuffer.remove(requestID)
+            responseBuffer.remove(requestID)
+            localCache.put(key, rowResponse)
+            (0 until rowsShareTheSameKey.size()).foreach(x=>{pairedResultBuffer.add(new JoinedRow(rowsShareTheSameKey.get(x),rowResponse)); currentInQueue-=1})
+            rowsShareTheSameKeyRequest.remove(key)
           }
         }
       }
