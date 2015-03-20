@@ -1,5 +1,7 @@
 package org.apache.spark.sql.execution.joins
 
+import java.util.{ArrayList => JavaArrayList}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SQLContext
 import org.apache.spark.sql.catalyst.ScalaReflection
@@ -10,11 +12,9 @@ import org.apache.spark.sql.test.TestSQLContext._
 import org.scalatest.FunSuite
 import org.apache.spark.sql.execution.{Record, ComplicatedRecord, PhysicalRDD, SparkPlan}
 
-import scala.collection.mutable.HashSet
 import scala.util.Random
 
 case class IP (ip: String)
-case class ReverseDNS
 
 class DNSJoinSuite extends FunSuite {
   val random: Random = new Random
@@ -23,14 +23,14 @@ class DNSJoinSuite extends FunSuite {
   val sqlContext = new SQLContext(sparkContext)
   val IPAttributes: Seq[Attribute] = ScalaReflection.attributesFor[IP]
 
-  var createdIPs: HashSet[IP] = new HashSet[IP]()
+  var createdIPs: JavaArrayList[IP] = new JavaArrayList[IP]()
 
   import sqlContext.createSchemaRDD
 
   // initialize a SparkPlan that is a sequential scan over a small amount of data
   val smallRDD1: RDD[IP] = sparkContext.parallelize((1 to 100).map(i => {
-    val ip: IP = IP(random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256))
-    createdIPs += ip
+    val ip: IP = IP((random.nextInt(220) + 1) + "." + random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256))
+    createdIPs.add(ip)
     ip
   }), 1)
   val smallScan1: SparkPlan = PhysicalRDD(IPAttributes, smallRDD1)
