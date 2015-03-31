@@ -152,10 +152,10 @@ class DNSJoinSuite extends FunSuite {
   //JoinedRow(1, "58.55.187.8", 10, "30.5801", "114.2734", "Wuhan,Hubei", "CN")
   //JoinedRow(1, "58.55.187.8", 10, "30.5801", "114.2734", "Wuhan", "Hubei", "CN")
   //JoinedRow(2, "208.99.212.153", 11, "47.6103", "-122.3341", "Seattle", "Washington", "US")
-var lgIPs: HashSet[IP] = new HashSet[IP]()
+var lgIPs: JavaArrayList[IP] = new JavaArrayList[IP]()
   val largeRDD1: RDD[IP] = sparkContext.parallelize((1 to 2000).map(i => {
-    val ip: IP = IP(random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256))
-    lgIPs += ip
+    val ip: IP = IP((random.nextInt(220) + 1) + "." + random.nextInt(256) + "." + random.nextInt(256) + "." + random.nextInt(256))
+    lgIPs.add(ip)
     ip
   }), 1)
   val largeScan1: SparkPlan = PhysicalRDD(IPAttributes, largeRDD1)
