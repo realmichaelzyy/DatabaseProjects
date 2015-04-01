@@ -7,7 +7,7 @@ import org.apache.spark.sql.execution.joins.BuildSide
 import org.apache.spark.util.collection.CompactBuffer
 
 import scala.collection.mutable
-import scala.collection.mutable.{HashMap, HashSet}
+import scala.collection.mutable.{HashMap}
 import java.util.{ArrayList => JavaArrayList}
 /**
  * ***** TASK 1 ******
@@ -68,8 +68,8 @@ trait SymmetricHashJoin {
       var isLeftCurrentStream:Boolean = false
       var currentStream: Iterator[Row] = rightIter
       var currentKeyGenerator: Projection =  rightKeyGenerator
-      var tableForLookUp: HashMap[Row, HashSet[Row]] =  new HashMap[Row, HashSet[Row]]()
-      var tableForInsertion: HashMap[Row, HashSet[Row]] = new HashMap[Row, HashSet[Row]]()
+      var tableForLookUp: HashMap[Row, CompactBuffer[Row]] =  new HashMap[Row, CompactBuffer[Row]]()
+      var tableForInsertion: HashMap[Row, CompactBuffer[Row]] = new HashMap[Row, CompactBuffer[Row]]()
 
       /**
        * This method returns the next joined tuple.
@@ -112,13 +112,13 @@ trait SymmetricHashJoin {
           }
           isLeftCurrentStream = !isLeftCurrentStream
 
-          val temp: HashMap[Row, HashSet[Row]] = tableForLookUp
+          val temp: HashMap[Row, CompactBuffer[Row]] = tableForLookUp
           tableForLookUp = tableForInsertion
           tableForInsertion = temp
         }//otherwise no need to switch
       }
 
-      def joinRowWithOrder(streamIn: Row, lookupResults: HashSet[Row]) = {
+      def joinRowWithOrder(streamIn: Row, lookupResults: CompactBuffer[Row]) = {
         if (isLeftCurrentStream){
           lookupResults.foreach(x=>pairedResultBuffer.add(new JoinedRow(streamIn, x)))
         }else{
@@ -132,30 +132,27 @@ trait SymmetricHashJoin {
        * @return whether or not a match was found
        */
 
-      def findNextMatch(): Boolean = {
+      def findNextMatch() = {
         // IMPLEMENT ME
-        var result = false
         if (leftIter!=null&&rightIter!=null){
           while (pairedResultBuffer.isEmpty() && (leftIter.hasNext || rightIter.hasNext)){
             switchRelations()
             val streamIn:Row = currentStream.next()
             val key: Row = currentKeyGenerator(streamIn)
 
-            val insertResult:Option[HashSet[Row]] = tableForInsertion.get(key)
+            val insertResult:Option[CompactBuffer[Row]] = tableForInsertion.get(key)
             if (insertResult != None){
               (insertResult.get)+=(streamIn)
             }else{
-              tableForInsertion.put(key, (new HashSet[Row]())+=streamIn)
+              tableForInsertion.put(key, (new CompactBuffer[Row]())+=streamIn)
             }
 
-            val lookupResult:Option[HashSet[Row]] = tableForLookUp.get(key)
+            val lookupResult:Option[CompactBuffer[Row]] = tableForLookUp.get(key)
             if (lookupResult != None){
               joinRowWithOrder(streamIn, lookupResult.get)
-              result = true
             }
           }
         }
-        result
       }
     }
   }

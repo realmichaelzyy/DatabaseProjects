@@ -12,6 +12,8 @@ import org.scalatest.FunSuite
 import scala.collection.immutable.HashSet
 import java.util.{HashMap => JavaHashMap, ArrayList => JavaArrayList, Iterator => JavaIterator}
 
+import scala.util.Random
+
 class SymmetricHashJoinSuite extends FunSuite {
   // initialize Spark magic stuff that we don't need to care about
   val sqlContext = new SQLContext(sparkContext)
@@ -101,7 +103,35 @@ class SymmetricHashJoinSuite extends FunSuite {
         countOccur += 1
       }
     }
-    assert(countOccur == 65)
+    assert(countOccur == 31*35)
+  }
+
+  def duplicate2Mapping(i:Int):ComplicatedRecord={
+    ComplicatedRecord(999999, "I am duplicate", 999999)
+  }
+  val random: Random = new Random
+  val size1:Int = random.nextInt(100)+2
+  val size2:Int = random.nextInt(99)+2
+  val dup2MatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to size1).map(duplicate2Mapping), 1)
+  val dup2MatchScan1: SparkPlan = PhysicalRDD(complicatedAttributes, dup2MatchRDD1)
+  val dup2MatchRDD2: RDD[ComplicatedRecord] = sparkContext.parallelize((1 to size2).map(duplicate2Mapping), 1)
+  val dup2MatchScan2: SparkPlan = PhysicalRDD(complicatedAttributes, dup2MatchRDD2)
+  test ("duplicate output ii                [Added by Daxi]"){
+    val outputRDD = GeneralSymmetricHashJoin(Seq(complicatedAttributes(2)), Seq(complicatedAttributes(0)), dup2MatchScan1, dup2MatchScan2).execute()
+    val seenValues: JavaArrayList[Row] = new JavaArrayList[Row]()
+
+    outputRDD.collect().foreach(x => seenValues.add(x))
+    //(0 to seenValues.size()-1).foreach(x=> println(seenValues.get(x)))
+    val duplicateRow:Row = new JoinedRow(Row(999999, "I am duplicate", 999999), Row(999999, "I am duplicate", 999999))
+    var countOccur:Int = 0
+    assert(seenValues.contains(duplicateRow))
+    for (j<-0 until seenValues.size()){
+      if (seenValues.get(j)== duplicateRow){
+        countOccur += 1
+      }
+    }
+    assert(countOccur == size1*size2)
+    assert(seenValues.size()==size1*size2)
   }
 
   val multiMatchRDD1: RDD[ComplicatedRecord] = sparkContext.parallelize((100 to 300).map(i => ComplicatedRecord(i, "Left", i%150)), 1)
