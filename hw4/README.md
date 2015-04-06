@@ -1,6 +1,3 @@
-How much day late: 1
-How much slip days left: 4-1 = 3, this is our first time using a slip day.
-Finish this hw a week ago, however, find a bug in part #1 today.
 # Homework 4: Joins in Spark
 
 In this assignment you'll implement two different types of joins in [Apache Spark](http://spark.apache.org) -- one fairly traditional, the other a bit unusual. This will require you to employ key concepts of the join algorithms that we have covered in the course in order to implement more novel joins. You will also get more practice with Scala to further cement your knowledge of the language.
