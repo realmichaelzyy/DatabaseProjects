@@ -104,12 +104,39 @@ DashboardController.prototype.processChanges = function () {
 /*
  * filterTransactionsByMapSelection()
  *
- * Filter the objects in the array `this.allTranscations` for objects that match the selected states
+ * Filter the objects in the array `this.allTransactions` for objects that match the selected states
  * in `this.usCashMap`.
  *
  * @return {Array} list of objects filtered by the selected states in `this.USCashMap`'s state selection
  */
-DashboardController.prototype.filterTransactionsByMapSelection = function () {
-    // Implement
-    return [];
+DashboardController.prototype.filterTransactionsByMapSelection = function () {    
+    var selectedStateSet = new Set(this.usCashMap.getStatesInSelection());
+    function checkWithSet(selectedSet){
+        return function(element){
+            return selectedSet.has(element['state']);
+        }
+    }
+
+    return this.allTransactions.filter(checkWithSet(selectedStateSet));
 };
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
