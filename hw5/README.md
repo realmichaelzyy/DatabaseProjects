@@ -5,7 +5,7 @@
 
 In homework 3, we wrote SQL queries that helped us answer certain questions about campaign contribution data in the United States. However, with a large number of results, it's hard to make heads or tails of what the data actually means. In this project, we'll explore using D3.js to help us visualize trends and significance in our data.
 
-This is an individual project. This assignment is due on **Thursday, April 9 at 11:59PM.**
+This is an individual project. This assignment is due on **Friday, April 10 at 11:59PM.**
 
 ## Setup
 The stack for this project consists of the following:

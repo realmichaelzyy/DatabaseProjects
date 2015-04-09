@@ -49,7 +49,9 @@ describe("DashboardControllerTest", function() {
             );
 
             dc.usCashMap.hasSelection = sandbox.stub().returns(true);
+            dc.usCashMap.hasStateInSelection = function (sc) { return 'CA' === sc; };
             dc.usCashMap.isSelectionClick = sandbox.stub().returns(true);
+            dc.usCashMap.getStatesInSelection = sandbox.stub().returns(['CA']);
             dc.filterTransactionsByMapSelection = sandbox.spy();
             dc.transactionHistogram.render = sandbox.spy();
             dc.transactionHistogram.setScale = sandbox.stub();
@@ -74,7 +76,9 @@ describe("DashboardControllerTest", function() {
             );
 
             dc.usCashMap.hasSelection = sandbox.stub().returns(false);
+            dc.usCashMap.hasStateInSelection = sandbox.stub().returns(false);
             dc.usCashMap.isSelectionClick = sandbox.stub().returns(false);
+            dc.usCashMap.getStatesInSelection = sandbox.stub().returns([]);
             dc.filterTransactionsByMapSelection = sandbox.spy();
             dc.transactionHistogram.render = sandbox.spy();
             dc.transactionHistogram.setScale = sandbox.stub();
