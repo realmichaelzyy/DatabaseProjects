@@ -97,7 +97,7 @@ USCashMap.prototype.setupMap = function () {
  * @params {Array} data is a list of objects containg the keys 'state' and 'total_amount'
  */
 USCashMap.prototype.render = function (data) {
-    // Hack needed to access class object in functions defined in this scope
+    // Hack needed to access class object in functions defined in this 
     var that = this;
 
     var moneyColorScale = d3.scale.sqrt()
@@ -121,7 +121,7 @@ USCashMap.prototype.render = function (data) {
             // Hint: take a look at moneyColorScale defined above
 
             // Implement
-            return '#000';  // Return a hexcode
+            return moneyColorScale(d['total_amount']);  // Return a hexcode
         });
 
     /** Exit phase **/
@@ -142,13 +142,16 @@ USCashMap.prototype.render = function (data) {
      *  (4) set internal state that signals the selection is not due to a click (already done for you)
      */
     this.states.on('mouseover', function(d, e, p){
-        that.setSelectionClickBoolean(false);
+        
         // NOTE: if you want to reference the USCashMap instantiated object,  you must use the
         // `that` variable defined above rather than `this`, since `this` is rebound to a newly
         // defined function.
 
         // Implement
-        console.log("Component received a mouseover event!");  // Remove when implemented
+        that.setSelectionClickBoolean(false); //4
+        that.addStateToSelection(d['state']); //1
+        d3.select(this).attr('fill', '#0BD90E');//2
+        that.setInspectionInfo(that.stateNameMap.get(d['state']),d['total_amount']);//3
     });
 
     /*
@@ -163,13 +166,15 @@ USCashMap.prototype.render = function (data) {
      *      (a) this means using the original `moneyColorScale` mapping
      */
     this.states.on('mouseout', function(d, e, p){
-        that.setSelectionClickBoolean(false);
         // NOTE: if you want to reference the USCashMap instantiated object,  you must use the
         // `that` variable defined above rather than `this`, since `this` is rebound to a newly
         // defined function.
 
         // Implement
-        console.log("Component received a mouseout event!");  // Remove when implemented
+        that.setSelectionClickBoolean(false);
+        that.clearInspectionInfo();
+        that.removeStateFromSelection(d['state']);
+        d3.select(this).attr('fill', moneyColorScale(d['total_amount']));
     });
 
     /*
@@ -193,7 +198,9 @@ USCashMap.prototype.render = function (data) {
         // defined function.
 
         // Implement
-        console.log("Component received a click!");  // Remove when implemented
+        that.addStateToSelection(d['state']);
+        d3.select(this).attr('fill', '#EECA60');
+        that.setInspectionInfo(that.stateNameMap.get(d['state']),d['total_amount']);
     });
 };
 

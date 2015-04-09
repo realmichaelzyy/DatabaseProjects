@@ -37,7 +37,7 @@ def get_all_transaction_amounts():
     results = db.fetchall()
     returnResult = []
     for item in results:
-        returnResult.append({'amount':results[0], 'state':results[1]})
+        returnResult.append({'amount':item[0], 'state':item[1]})
 
     return returnResult
 
@@ -58,5 +58,5 @@ def get_total_transaction_amounts_by_state():
     results = db.fetchall()
     returnResult = []
     for item in results:
-        returnResult.append({'total_amount':results[0], 'state':results[1]})
+        returnResult.append({'total_amount':item[0], 'state':item[1]})
     return returnResult
