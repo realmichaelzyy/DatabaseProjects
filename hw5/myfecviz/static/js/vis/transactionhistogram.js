@@ -180,8 +180,6 @@ TransactionHistogram.prototype.setScale = function (data) {
       .range(d3.range(0, this.width, this.width/(this.bins.length + 1)));
 
     // Implement: define a suitable yScale given the data
-    //console.log(this.width);
-    //console.log(this.width/(this.bins.length + 1));
     var dataLength = data.length;
     var maxY = -1;
     for (i = 0; i < histogramData.length; i++){

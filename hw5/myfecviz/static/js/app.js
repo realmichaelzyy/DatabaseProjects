@@ -76,8 +76,6 @@ DashboardController.prototype.firstProcess = function (error, response0, respons
  */
 DashboardController.prototype.processChanges = function () {
     // Implement
-    console.log("Controller notified of map change.");  // Remove when implemented
-
     var renderData;  // filter renderData as needed.
     if (this.usCashMap.isSelectionClick() && this.usCashMap.hasSelection()) {
         // Selection was clicked
