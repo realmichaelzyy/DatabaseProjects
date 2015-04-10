@@ -68,22 +68,49 @@ TransactionHistogram.prototype.render = function(data) {
     var bar = this.svg.selectAll('.bar')
           .data(histogramData, function(d) {return d.x;});
 
+
     /* Enter phase */
     // Implement
+
     // Add a new grouping
+    if (!bar.enter().empty()){
+        var har = bar.enter().append("g").attr("class", "bar");
+        har.append("rect");
+        har.append("text");
+    }
+    bar = this.svg.selectAll('.bar')
+          .data(histogramData, function(d) {return d.x;});
+    bar.attr("transform", function(d) {return "translate(" + that.xScale(d.x) + "," + 0 + ")"; });
+    bar.select('rect')
+        .attr("x", 1.66)
+        .attr("width", that.xScale(histogramData[0].dx)-1.66)
+        .transition().duration(500).attr("height", function(d){return that.yScale(d.y);})
+        .attr("y",  function(d){return that.height-that.yScale(d.y);})
+        .attr("fill", that.currentColorState);
 
-    // Add a rectangle to this bar grouping
 
-    // Add text to this bar grouping
-
-
+    bar.select('text').attr("dy", function(d){
+        if (that.yScale(d.y) >= 0.03*that.height)
+            return 10;
+        return -4;
+    })
+    .transition().duration(490).attr("y",  function(d){return that.height-that.yScale(d.y);})
+    .attr("x", that.xScale(histogramData[0].dx) / 2)
+    .attr("text-anchor", "middle")
+    .attr("font-size", 10)
+    .attr("font-family","Verdana")
+    .attr("fill", "black")
+    .text(function(d) {   
+        var prefix = d3.formatPrefix(d.y);
+        return prefix.scale(d.y).toPrecision(3)+prefix.symbol;
+    });
+    
     /** Update phase */
     // Implement
 
 
     /** Exit phase */
     // Implement
-
 
     // Draw / update the axis as well
     this.drawAxis();
@@ -153,7 +180,17 @@ TransactionHistogram.prototype.setScale = function (data) {
       .range(d3.range(0, this.width, this.width/(this.bins.length + 1)));
 
     // Implement: define a suitable yScale given the data
-    this.yScale;
+    //console.log(this.width);
+    //console.log(this.width/(this.bins.length + 1));
+    var dataLength = data.length;
+    var maxY = -1;
+    for (i = 0; i < histogramData.length; i++){
+        if (histogramData[i].y > maxY){
+            maxY = histogramData[i].y;
+        }
+    }
+    var viewHeight = this.height;
+    this.yScale = d3.scale.linear().domain([0, maxY]).range([0,viewHeight]);
 
     return histogramData;
 };
@@ -170,9 +207,9 @@ TransactionHistogram.prototype.hasScaleSet = function () {
 };
 
 TransactionHistogram.prototype.colorStates = {
-    'PRIMARY': 1,
-    'SECONDARY': 2,
-    'DEFAULT': 0
+    'PRIMARY': "orange",
+    'SECONDARY': "#0BD90E",
+    'DEFAULT': "green"
 }
 
 

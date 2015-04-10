@@ -82,12 +82,15 @@ DashboardController.prototype.processChanges = function () {
     if (this.usCashMap.isSelectionClick() && this.usCashMap.hasSelection()) {
         // Selection was clicked
         // Make sure transaction histogram is rescaled to just the selection
-
+        renderData = this.filterTransactionsByMapSelection();
+        this.transactionHistogram.setScale(renderData);
+        this.transactionHistogram.setHistogramColor(this.transactionHistogram.colorStates.PRIMARY);
         // Implement ! 
     } else if (this.usCashMap.hasSelection()) {
         // Selection is just hovered upon
         // Use scale representing all of data (for a visually relative measure) 
-
+        renderData = this.filterTransactionsByMapSelection();
+        this.transactionHistogram.setHistogramColor(this.transactionHistogram.colorStates.SECONDARY);
         // Implement ! 
     } else {
         // No user interaction
@@ -98,7 +101,7 @@ DashboardController.prototype.processChanges = function () {
     }
 
     // Uncomment the following line when you're ready!
-    // this.transactionHistogram.render(renderData);
+    this.transactionHistogram.render(renderData);
 };
 
 /*
@@ -107,7 +110,7 @@ DashboardController.prototype.processChanges = function () {
  * Filter the objects in the array `this.allTransactions` for objects that match the selected states
  * in `this.usCashMap`.
  *
- * @return {Array} list of objects filtered by the selected states in `this.USCashMap`'s state selection
+ * @return {Array} list of objects filtered by the selected states in `this.usCashMap`'s state selection
  */
 DashboardController.prototype.filterTransactionsByMapSelection = function () {    
     var selectedStateSet = new Set(this.usCashMap.getStatesInSelection());
@@ -119,24 +122,3 @@ DashboardController.prototype.filterTransactionsByMapSelection = function () {
 
     return this.allTransactions.filter(checkWithSet(selectedStateSet));
 };
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

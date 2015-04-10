@@ -199,7 +199,7 @@ USCashMap.prototype.render = function (data) {
 
         // Implement
         that.addStateToSelection(d['state']);
-        d3.select(this).attr('fill', '#EECA60');
+        d3.select(this).attr('fill', 'orange');
         that.setInspectionInfo(that.stateNameMap.get(d['state']),d['total_amount']);
     });
 };
