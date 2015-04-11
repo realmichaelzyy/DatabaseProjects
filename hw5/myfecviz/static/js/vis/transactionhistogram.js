@@ -81,8 +81,6 @@ TransactionHistogram.prototype.render = function(data) {
     
     /** Update phase */
     // Implement
-    bar = this.svg.selectAll('.bar')
-          .data(histogramData, function(d) {return d.x;});
     bar.attr("transform", function(d) {return "translate(" + that.xScale(d.x) + "," + 0 + ")"; });
     bar.select('rect')
         .attr("x", 1.66)
