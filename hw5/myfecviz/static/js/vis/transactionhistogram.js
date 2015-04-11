@@ -78,6 +78,9 @@ TransactionHistogram.prototype.render = function(data) {
         har.append("rect");
         har.append("text");
     }
+    
+    /** Update phase */
+    // Implement
     bar = this.svg.selectAll('.bar')
           .data(histogramData, function(d) {return d.x;});
     bar.attr("transform", function(d) {return "translate(" + that.xScale(d.x) + "," + 0 + ")"; });
@@ -104,14 +107,10 @@ TransactionHistogram.prototype.render = function(data) {
         var prefix = d3.formatPrefix(d.y);
         return prefix.scale(d.y).toPrecision(3)+prefix.symbol;
     });
-    
-    /** Update phase */
-    // Implement
-
 
     /** Exit phase */
     // Implement
-
+    bar.exit().remove();
     // Draw / update the axis as well
     this.drawAxis();
 };
