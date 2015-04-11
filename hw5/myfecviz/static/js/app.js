@@ -111,7 +111,7 @@ DashboardController.prototype.processChanges = function () {
  * @return {Array} list of objects filtered by the selected states in `this.usCashMap`'s state selection
  */
 DashboardController.prototype.filterTransactionsByMapSelection = function () {    
-    var selectedStateSet = new Set(this.usCashMap.getStatesInSelection());
+    var selectedStateSet = new d3.set(this.usCashMap.getStatesInSelection());
     function checkWithSet(selectedSet){
         return function(element){
             return selectedSet.has(element['state']);
