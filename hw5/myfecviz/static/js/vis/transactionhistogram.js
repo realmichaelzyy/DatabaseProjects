@@ -100,7 +100,11 @@ TransactionHistogram.prototype.render = function(data) {
     .attr("text-anchor", "middle")
     .attr("font-size", 10)
     .attr("font-family","Verdana")
-    .attr("fill", "black")
+    .attr("fill", function(d){
+        if (that.yScale(d.y) >= 0.03*that.height)
+            return "white";
+        return "black";
+    })
     .text(function(d) {   
         var prefix = d3.formatPrefix(d.y);
         return prefix.scale(d.y).toPrecision(3)+prefix.symbol;
